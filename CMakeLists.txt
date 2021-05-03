@@ -15,6 +15,10 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
+  # pcl_conversions
+  # pcl_msgs
+  # pcl_ros
+  # sensor_msgs
 )
 
 # PCL
@@ -22,6 +26,13 @@ find_package(PCL REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
+
+catkin_package(
+ INCLUDE_DIRS include
+ LIBRARIES gpg
+ CATKIN_DEPENDS roscpp rospy pcl_conversions pcl_msgs pcl_ros sensor_msgs
+ #  DEPENDS system_lib
+)
 
 ## Set compiler optimization flags
 set(CMAKE_CXX_FLAGS "-O3 -fopenmp -fPIC -Wno-deprecated -Wenum-compare")
@@ -100,6 +111,13 @@ target_link_libraries(${PROJECT_NAME}_point_list
                       ${PROJECT_NAME}_eigen_utils)
 
 
+add_executable(ros_integration src/ros_integration.cpp)
+add_dependencies(ros_integration ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(ros_integration
+                      ${catkin_LIBRARIES}
+                      ${PROJECT_NAME}_config_file
+                      ${PROJECT_NAME}_grasp_candidates_generator)
+                      
 # Rename executable.
 set_target_properties(${PROJECT_NAME}_generate_candidates 
                       PROPERTIES OUTPUT_NAME generate_candidates 
@@ -109,12 +127,7 @@ set_target_properties(${PROJECT_NAME}_grasp_candidates_generator
                       PROPERTIES OUTPUT_NAME grasp_candidates_generator)
 
 
-# Same as above, but is the template version instead of having lots of documentation.
-add_executable(ros_integration src/ros_integration.cpp)
-add_dependencies(ros_integration ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(ros_integration
-                      ${PROJECT_NAME}_config_file 
-                      ${PROJECT_NAME}_grasp_candidates_generator)
+
 
 # Set the location for library installation (/usr/lib in this case is not really necessary)
 # Use "sudo make install" to apply
