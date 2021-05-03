@@ -15,10 +15,10 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
-  # pcl_conversions
-  # pcl_msgs
-  # pcl_ros
-  # sensor_msgs
+  pcl_conversions
+  pcl_msgs
+  pcl_ros
+  sensor_msgs
 )
 
 # PCL
@@ -109,15 +109,27 @@ target_link_libraries(${PROJECT_NAME}_grasp_candidates_generator
                       
 target_link_libraries(${PROJECT_NAME}_point_list 
                       ${PROJECT_NAME}_eigen_utils)
+                      
+                      
+catkin_package(
+#  INCLUDE_DIRS include
+#  LIBRARIES gpg
+#  CATKIN_DEPENDS roscpp
+#  DEPENDS system_lib
+)
 
+include_directories(
+# include
+  ${catkin_INCLUDE_DIRS}
+)
 
 add_executable(ros_integration src/ros_integration.cpp)
 add_dependencies(ros_integration ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(ros_integration
-                      ${catkin_LIBRARIES}
-                      ${PROJECT_NAME}_config_file
-                      ${PROJECT_NAME}_grasp_candidates_generator)
-                      
+${catkin_LIBRARIES}
+${PROJECT_NAME}_config_file
+${PROJECT_NAME}_grasp_candidates_generator)
+         
 # Rename executable.
 set_target_properties(${PROJECT_NAME}_generate_candidates 
                       PROPERTIES OUTPUT_NAME generate_candidates 

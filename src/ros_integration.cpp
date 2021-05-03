@@ -4,39 +4,32 @@
 #include <vector>
 
 // // Custom
-// #include <gpg/candidates_generator.h>
-// #include <gpg/hand_search.h>
-// #include <gpg/config_file.h>
+#include <gpg/candidates_generator.h>
+#include <gpg/hand_search.h>
+#include <gpg/config_file.h>
 
 // ROS
 #include "ros/ros.h"
-#include <sensor_msgs/PointCloud.h>
+#include <sensor_msgs/PointCloud2.h>
 
-sensor_msgs::PointCloud point_cloud;
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
+#include <boost/foreach.hpp>
 
-void ptCloudCB(const sensor_msgs::PointCloud& msg)
+typedef pcl::PointCloud<pcl::PointXYZRGBA> PointCloudRGB;
+PointCloudRGB::Ptr pcl_point_cloud;
+
+bool pt_cloud_received = false;
+int count = 0;
+
+void ptCloudCB(const PointCloudRGB::Ptr& msg)
 {
-  point_cloud = msg;
+  pcl_point_cloud = msg;
+  pt_cloud_received = true;
+  count = msg->width;
+  // BOOST_FOREACH (const pcl::PointXYZRGBA& pt, msg.points)
+  ROS_INFO_STREAM(*pcl_point_cloud);
 }
-
-// // function to read in a double array from a single line of a configuration file
-// std::vector<double> stringToDouble(const std::string& str)
-// {
-//   std::vector<double> values;
-//   std::stringstream ss(str);
-//   double v;
-
-//   while (ss >> v)
-//   {
-//     values.push_back(v);
-//     if (ss.peek() == ' ')
-//     {
-//       ss.ignore();
-//     }
-//   }
-
-//   return values;
-// }
 
 
 int main(int argc, char* argv[])
@@ -45,86 +38,73 @@ int main(int argc, char* argv[])
 
   ros::NodeHandle nh;
 
-  ros::Subscriber sub = nh.subscribe("gpg_ros_integration", 1000, ptCloudCB);
+  ros::Subscriber sub = nh.subscribe("/pcl_object", 1000, ptCloudCB);
 
-  // double finger_width = 0.01;     // HARDCODE
-  // double hand_outer_diameter  = 0.12;     // HARDCODE
-  // double hand_depth = 0.06;     // HARDCODE
-  // double hand_height  = 0.02;     // HARDCODE
-  // double init_bite  = 0.01;     // HARDCODE
+  while (!pt_cloud_received)
+  {
+    ros::Duration(0.1).sleep();
+    ros::spinOnce();
+  }
+  
 
-  // bool voxelize = true;
-  // bool remove_outliers = false;
-  // std::vector<double> workspace{-1.0,1.0,-1.0,1.0,-1.0,1.0};
-  // std::vector<double> camera_pose{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
-  // std::cout << "voxelize: " << voxelize << "\n";
-  // std::cout << "remove_outliers: " << remove_outliers << "\n";
-  // std::cout << "workspace: " << workspace_str << "\n";
-  // std::cout << "camera_pose: " << camera_pose_str << "\n";
+  double finger_width = 0.01;     // HARDCODE
+  double hand_outer_diameter  = 0.12;     // HARDCODE
+  double hand_depth = 0.06;     // HARDCODE
+  double hand_height  = 0.02;     // HARDCODE
+  double init_bite  = 0.01;     // HARDCODE
 
-  // int num_samples = config_file.getValueOfKey<int>("num_samples", 1000);
-  // int num_threads = config_file.getValueOfKey<int>("num_threads", 1);
-  // double nn_radius = config_file.getValueOfKey<double>("nn_radius", 0.01);
-  // int num_orientations = config_file.getValueOfKey<int>("num_orientations", 8);
-  // int rotation_axis = config_file.getValueOfKey<int>("rotation_axis", 2);
-  // std::cout << "num_samples: " << num_samples << "\n";
-  // std::cout << "num_threads: " << num_threads << "\n";
-  // std::cout << "nn_radius: " << nn_radius << "\n";
-  // std::cout << "num_orientations: " << num_orientations << "\n";
-  // std::cout << "rotation_axis: " << rotation_axis << "\n";
+  bool voxelize = true;
+  bool remove_outliers = false;
+  std::vector<double> workspace{-1.0,1.0,-1.0,1.0,-1.0,1.0};
+  std::vector<double> camera_pose{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 
-  // bool plot_grasps = config_file.getValueOfKey<bool>("plot_grasps", true);
-  // bool plot_normals = config_file.getValueOfKey<bool>("plot_normals", false);
-  // std::cout << "plot_grasps: " << plot_grasps << "\n";
-  // std::cout << "plot_normals: " << plot_normals << "\n";
+  int num_samples = 1000;
+  int num_threads = 1;
+  double nn_radius = 0.01;
+  int num_orientations = 8;
+  int rotation_axis = 2;
 
-  // // Create object to generate grasp candidates.
-  // CandidatesGenerator::Parameters generator_params;
-  // generator_params.num_samples_ = num_samples;
-  // generator_params.num_threads_ = num_threads;
-  // generator_params.plot_normals_ = plot_normals;
-  // generator_params.plot_grasps_ = plot_grasps;
-  // generator_params.remove_statistical_outliers_ = remove_outliers;
-  // generator_params.voxelize_ = voxelize;
-  // generator_params.workspace_ = workspace;
-  // HandSearch::Parameters hand_search_params;
-  // hand_search_params.finger_width_ = finger_width;
-  // hand_search_params.hand_outer_diameter_ = hand_outer_diameter;
-  // hand_search_params.hand_depth_ = hand_depth;
-  // hand_search_params.hand_height_ = hand_height;
-  // hand_search_params.init_bite_ = init_bite;
-  // hand_search_params.nn_radius_frames_ = nn_radius;
-  // hand_search_params.num_orientations_ = num_orientations;
-  // hand_search_params.num_samples_ = num_samples;
-  // hand_search_params.num_threads_ = num_threads;
-  // hand_search_params.rotation_axis_ = rotation_axis;
-  // CandidatesGenerator candidates_generator(generator_params, hand_search_params);
+  bool plot_grasps = true;
+  bool plot_normals = false;
+  
+  // Create object to generate grasp candidates.
+  CandidatesGenerator::Parameters generator_params;
+  generator_params.num_samples_ = num_samples;
+  generator_params.num_threads_ = num_threads;
+  generator_params.plot_normals_ = plot_normals;
+  generator_params.plot_grasps_ = plot_grasps;
+  generator_params.remove_statistical_outliers_ = remove_outliers;
+  generator_params.voxelize_ = voxelize;
+  generator_params.workspace_ = workspace;
 
-  // // Set the camera pose.
-  // Eigen::Matrix3Xd view_points(3,1);
-  // view_points << camera_pose[3], camera_pose[6], camera_pose[9];
+  HandSearch::Parameters hand_search_params;
+  hand_search_params.finger_width_ = finger_width;
+  hand_search_params.hand_outer_diameter_ = hand_outer_diameter;
+  hand_search_params.hand_depth_ = hand_depth;
+  hand_search_params.hand_height_ = hand_height;
+  hand_search_params.init_bite_ = init_bite;
+  hand_search_params.nn_radius_frames_ = nn_radius;
+  hand_search_params.num_orientations_ = num_orientations;
+  hand_search_params.num_samples_ = num_samples;
+  hand_search_params.num_threads_ = num_threads;
+  hand_search_params.rotation_axis_ = rotation_axis;
 
-  // // Create object to load point cloud from file.
-  // CloudCamera cloud_cam(argv[2], view_points);
-  // if (cloud_cam.getCloudOriginal()->size() == 0)
-  // {
-  //   std::cout << "Input point cloud is empty or does not exist!\n";
-  //   return (-1);
-  // }
+  CandidatesGenerator candidates_generator(generator_params, hand_search_params);
 
-  // // Load surface normals from file.
-  // std::cout << argc << "\n";
-  // if (argc > 3)
-  // {
-  //   cloud_cam.setNormalsFromFile(argv[3]);
-  //   std::cout << "Loaded surface normals from file.\n";
-  // }
+  // Set the camera pose.
+  Eigen::Matrix3Xd view_points(3,1);
+  view_points << 0,0,0;
 
-  // // Point cloud preprocessing: voxelize, remove statistical outliers, workspace filter, compute normals, subsample.
-  // candidates_generator.preprocessPointCloud(cloud_cam);
+  // Create object to load point cloud from file.
+  CloudCamera cloud_cam(pcl_point_cloud, count, view_points);
 
-  // // Generate a list of grasp candidates.
-  // std::vector<Grasp> candidates = candidates_generator.generateGraspCandidates(cloud_cam);
+  // Point cloud preprocessing: voxelize, remove statistical outliers, workspace filter, compute normals, subsample.
+  candidates_generator.preprocessPointCloud(cloud_cam);
+
+  // Generate a list of grasp candidates.
+  std::vector<Grasp> candidates = candidates_generator.generateGraspCandidates(cloud_cam);
+
+  // ros::spin();
 
   return 0;
 }
