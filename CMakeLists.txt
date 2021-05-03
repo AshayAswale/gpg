@@ -108,6 +108,14 @@ set_target_properties(${PROJECT_NAME}_generate_candidates
 set_target_properties(${PROJECT_NAME}_grasp_candidates_generator 
                       PROPERTIES OUTPUT_NAME grasp_candidates_generator)
 
+
+# Same as above, but is the template version instead of having lots of documentation.
+add_executable(ros_integration src/ros_integration.cpp)
+add_dependencies(ros_integration ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(ros_integration
+                      ${PROJECT_NAME}_config_file 
+                      ${PROJECT_NAME}_grasp_candidates_generator)
+
 # Set the location for library installation (/usr/lib in this case is not really necessary)
 # Use "sudo make install" to apply
 install(TARGETS ${PROJECT_NAME}_grasp_candidates_generator 
