@@ -134,7 +134,10 @@ std::vector<Grasp> CandidatesGenerator::generateGraspCandidates(const CloudCamer
     {
       if (hand_set_list[i].getIsValid()(j))
       {
-        candidates.push_back(hands[j]);
+        if(std::abs(hands[j].getGraspTop()[0] - hands[j].getGraspBottom()[0])<0.005)
+          if(std::abs(hands[j].getGraspTop()[1] - hands[j].getGraspBottom()[1])<0.005)
+            if((hands[j].getGraspTop()[2] - hands[j].getGraspBottom()[2])>0)
+              candidates.push_back(hands[j]);
       }
     }
   }
