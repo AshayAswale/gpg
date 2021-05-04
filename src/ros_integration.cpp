@@ -15,38 +15,28 @@
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
 #include <boost/foreach.hpp>
+#include <mutex>
 
 typedef pcl::PointCloud<pcl::PointXYZRGBA> PointCloudRGB;
-PointCloudRGB::Ptr pcl_point_cloud;
+PointCloudRGB::Ptr pcl_point_cloud_;
 
-bool pt_cloud_received = false;
-int count = 0;
+bool pt_cloud_received_ = false;
+int count_ = 0;
+std::mutex pose_mutex_;
 
 void ptCloudCB(const PointCloudRGB::Ptr& msg)
 {
-  pcl_point_cloud = msg;
-  pt_cloud_received = true;
-  count = msg->width;
+  std::lock_guard<std::mutex> pose_lock(pose_mutex_);
+  pcl_point_cloud_ = msg;
+  pt_cloud_received_ = true;
+  count_ = msg->width;
   // BOOST_FOREACH (const pcl::PointXYZRGBA& pt, msg.points)
-  ROS_INFO_STREAM(*pcl_point_cloud);
+  // ROS_INFO_STREAM(*pcl_point_cloud_);
 }
 
 
-int main(int argc, char* argv[])
+void setHandParameters(CandidatesGenerator::Parameters& generator_params, HandSearch::Parameters& hand_search_params)
 {
-  ros::init(argc, argv, "ros_integration");
-
-  ros::NodeHandle nh;
-
-  ros::Subscriber sub = nh.subscribe("/pcl_object", 1000, ptCloudCB);
-
-  while (!pt_cloud_received)
-  {
-    ros::Duration(0.1).sleep();
-    ros::spinOnce();
-  }
-  
-
   double finger_width = 0.01;     // HARDCODE
   double hand_outer_diameter  = 0.12;     // HARDCODE
   double hand_depth = 0.06;     // HARDCODE
@@ -64,11 +54,9 @@ int main(int argc, char* argv[])
   int num_orientations = 8;
   int rotation_axis = 2;
 
-  bool plot_grasps = true;
+  bool plot_grasps = false;
   bool plot_normals = false;
   
-  // Create object to generate grasp candidates.
-  CandidatesGenerator::Parameters generator_params;
   generator_params.num_samples_ = num_samples;
   generator_params.num_threads_ = num_threads;
   generator_params.plot_normals_ = plot_normals;
@@ -77,7 +65,6 @@ int main(int argc, char* argv[])
   generator_params.voxelize_ = voxelize;
   generator_params.workspace_ = workspace;
 
-  HandSearch::Parameters hand_search_params;
   hand_search_params.finger_width_ = finger_width;
   hand_search_params.hand_outer_diameter_ = hand_outer_diameter;
   hand_search_params.hand_depth_ = hand_depth;
@@ -88,6 +75,25 @@ int main(int argc, char* argv[])
   hand_search_params.num_samples_ = num_samples;
   hand_search_params.num_threads_ = num_threads;
   hand_search_params.rotation_axis_ = rotation_axis;
+}
+
+int main(int argc, char* argv[])
+{
+  ros::init(argc, argv, "ros_integration");
+
+  ros::NodeHandle nh;
+
+  ros::Subscriber sub = nh.subscribe("/pcl_object", 10, ptCloudCB);
+
+  while (!pt_cloud_received_)
+  {
+    ros::Duration(0.1).sleep();
+    ros::spinOnce();
+  }
+  
+  CandidatesGenerator::Parameters generator_params;
+  HandSearch::Parameters hand_search_params;
+  setHandParameters(generator_params, hand_search_params);  
 
   CandidatesGenerator candidates_generator(generator_params, hand_search_params);
 
@@ -95,16 +101,24 @@ int main(int argc, char* argv[])
   Eigen::Matrix3Xd view_points(3,1);
   view_points << 0,0,0;
 
-  // Create object to load point cloud from file.
-  CloudCamera cloud_cam(pcl_point_cloud, count, view_points);
+  while(ros::ok())
+  {
+    if(pt_cloud_received_)
+    {
+      std::lock_guard<std::mutex> pose_lock(pose_mutex_);
+      // Create object to load point cloud from file.
+      CloudCamera cloud_cam(pcl_point_cloud_, count_, view_points);
 
-  // Point cloud preprocessing: voxelize, remove statistical outliers, workspace filter, compute normals, subsample.
-  candidates_generator.preprocessPointCloud(cloud_cam);
+      // Point cloud preprocessing: voxelize, remove statistical outliers, workspace filter, compute normals, subsample.
+      candidates_generator.preprocessPointCloud(cloud_cam);
 
-  // Generate a list of grasp candidates.
-  std::vector<Grasp> candidates = candidates_generator.generateGraspCandidates(cloud_cam);
-
-  // ros::spin();
+      // Generate a list of grasp candidates.
+      std::vector<Grasp> candidates = candidates_generator.generateGraspCandidates(cloud_cam);
+      
+      pt_cloud_received_ = false;
+    }
+    ros::spinOnce();
+  }
 
   return 0;
 }
