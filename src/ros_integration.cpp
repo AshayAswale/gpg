@@ -17,6 +17,10 @@
 #include <boost/foreach.hpp>
 #include <mutex>
 
+#include <gpg/GraspArrayMsg.h>
+#include <std_msgs/Float64.h>
+#include <std_msgs/Int8.h>
+
 typedef pcl::PointCloud<pcl::PointXYZRGBA> PointCloudRGB;
 PointCloudRGB::Ptr pcl_point_cloud_;
 
@@ -84,6 +88,7 @@ int main(int argc, char* argv[])
   ros::NodeHandle nh;
 
   ros::Subscriber sub = nh.subscribe("/pcl_object", 10, ptCloudCB);
+  ros::Publisher grasp_pub = nh.advertise<gpg::GraspArrayMsg>("/grasp_set", 1000);
 
   while (!pt_cloud_received_)
   {
@@ -102,10 +107,11 @@ int main(int argc, char* argv[])
   view_points << 0,0,0;
 
   while(ros::ok())
-  {
+  {    
     if(pt_cloud_received_)
     {
       std::lock_guard<std::mutex> pose_lock(pose_mutex_);
+
       // Create object to load point cloud from file.
       CloudCamera cloud_cam(pcl_point_cloud_, count_, view_points);
 
@@ -114,7 +120,23 @@ int main(int argc, char* argv[])
 
       // Generate a list of grasp candidates.
       std::vector<Grasp> candidates = candidates_generator.generateGraspCandidates(cloud_cam);
+
+      gpg::GraspArrayMsg grasp_array;
       
+      gpg::GraspMsg grasp;
+
+      for(int i = 0; i<candidates.size(); i++)
+      {
+        grasp.grasp_number.data = i;
+        grasp.x.data = candidates.at(i).getGraspBottom()[0];;
+        grasp.y.data = candidates.at(i).getGraspBottom()[1];
+        grasp.z.data = candidates.at(i).getGraspBottom()[2];
+        grasp.phi.data = candidates.at(i).getAxis()[1];
+
+        grasp_array.grasps.push_back(grasp);
+      }
+      
+      grasp_pub.publish(grasp_array);
       pt_cloud_received_ = false;
     }
     ros::spinOnce();

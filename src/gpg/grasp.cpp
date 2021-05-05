@@ -77,7 +77,7 @@ void Grasp::writeHandsToFile(const std::string& filename, const std::vector<Gras
   for (int i = 0; i < hands.size(); i++)
   {
     std::cout << "Hand " << i << std::endl;
-    print();
+    // print();
 
     myfile << vectorToString(hands[i].getGraspBottom()) << vectorToString(hands[i].getGraspSurface())
           << vectorToString(hands[i].getAxis()) << vectorToString(hands[i].getApproach())

@@ -19,6 +19,8 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_msgs
   pcl_ros
   sensor_msgs
+  message_generation
+  message_filters
 )
 
 # PCL
@@ -27,13 +29,6 @@ include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
-catkin_package(
- INCLUDE_DIRS include
- LIBRARIES gpg
- CATKIN_DEPENDS roscpp rospy pcl_conversions pcl_msgs pcl_ros sensor_msgs
- #  DEPENDS system_lib
-)
-
 ## Set compiler optimization flags
 set(CMAKE_CXX_FLAGS "-O3 -fopenmp -fPIC -Wno-deprecated -Wenum-compare")
 # set(CMAKE_CXX_FLAGS "-O3 -fopenmp -march=native -mfpmath=sse -funroll-loops -fPIC -Wno-deprecated -Wenum-compare") # no improvement
@@ -41,7 +36,25 @@ set(CMAKE_CXX_FLAGS "-O3 -fopenmp -fPIC -Wno-deprecated -Wenum-compare")
  
 # Add the headers from the <include> directory
 include_directories(include)
- 
+
+add_message_files(
+  FILES
+  GraspMsg.msg
+  GraspArrayMsg.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+
+catkin_package(
+ INCLUDE_DIRS include
+ LIBRARIES gpg
+ CATKIN_DEPENDS roscpp rospy pcl_conversions pcl_msgs pcl_ros sensor_msgs message_generation message_filters
+ #  DEPENDS system_lib
+)
+
 # Generate the shared library from the sources
 add_library(${PROJECT_NAME}_grasp_candidates_generator SHARED src/${PROJECT_NAME}/candidates_generator.cpp)
 
