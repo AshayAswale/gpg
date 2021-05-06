@@ -21,6 +21,8 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int8.h>
 
+#include <gpg/plot.h>
+
 typedef pcl::PointCloud<pcl::PointXYZRGBA> PointCloudRGB;
 PointCloudRGB::Ptr pcl_point_cloud_;
 
@@ -87,7 +89,7 @@ int main(int argc, char* argv[])
 
   ros::NodeHandle nh;
 
-  ros::Subscriber sub = nh.subscribe("/pcl_object", 10, ptCloudCB);
+  ros::Subscriber sub = nh.subscribe("/pcl_franka_filtered", 10, ptCloudCB);
   ros::Publisher grasp_pub = nh.advertise<gpg::GraspArrayMsg>("/grasp_set", 1000);
 
   while (!pt_cloud_received_)
@@ -105,6 +107,7 @@ int main(int argc, char* argv[])
   // Set the camera pose.
   Eigen::Matrix3Xd view_points(3,1);
   view_points << 0,0,0;
+  Plot plotter_;
 
   while(ros::ok())
   {    
@@ -135,7 +138,10 @@ int main(int argc, char* argv[])
 
         grasp_array.grasps.push_back(grasp);
       }
-      
+      // std::vector<Grasp> temp_grasp;
+      // temp_grasp.push_back(candidates.front());
+      // plotter_.plotFingers3D(temp_grasp, cloud_cam.getCloudOriginal(), "Grasp Candidates", hand_search_params.hand_outer_diameter_,
+      // hand_search_params.finger_width_, hand_search_params.hand_depth_, hand_search_params.hand_height_);
       grasp_pub.publish(grasp_array);
       pt_cloud_received_ = false;
     }
